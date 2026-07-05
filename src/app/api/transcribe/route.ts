@@ -53,12 +53,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    // We MUST buffer the file into memory to pass to Groq SDK
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     
-    // Create a native Node.js File object that Groq SDK perfectly understands
-    const safeFile = new File([buffer], "recording.webm", { type: file.type });
+    // Import toFile from groq-sdk to securely convert buffer for the API
+    const { toFile } = require("groq-sdk");
+    const safeFile = await toFile(buffer, "recording.webm", { type: file.type });
 
     // Use official SDK which correctly handles multipart form boundaries and timeouts
     const transcription = await groq.audio.transcriptions.create({
