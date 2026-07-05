@@ -72,6 +72,21 @@ export default function HomeClient({ session }: HomeClientProps) {
             </button>
           </div>
 
+          <div className="flex flex-col items-center gap-3 mt-8 text-xs text-[var(--secondary-text)]">
+            <div className="flex gap-4">
+              <Link href="/privacy" className="hover:text-[var(--primary-text)] hover:underline underline-offset-2 transition-colors">
+                Privacy Policy
+              </Link>
+              <span>&bull;</span>
+              <Link href="/terms" className="hover:text-[var(--primary-text)] hover:underline underline-offset-2 transition-colors">
+                Terms of Service
+              </Link>
+            </div>
+            <div className="flex flex-col items-center gap-1 opacity-80">
+              <p>&copy; {new Date().getFullYear()} CaliX. MIT License.</p>
+              <p>Developed by Satyam Singh Rawat</p>
+            </div>
+          </div>
         </main>
       </div>
     );
