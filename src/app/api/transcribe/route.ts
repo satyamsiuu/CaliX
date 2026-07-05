@@ -50,9 +50,15 @@ export async function POST(request: Request) {
     );
   }
 
+  // CRITICAL FIX: Next.js incoming File objects cause Node's fetch to hang indefinitely 
+  // when passed directly to a new FormData. We MUST buffer it into memory first!
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const safeBlob = new Blob([buffer], { type: file.type });
+
   try {
     const groqForm = new FormData();
-    groqForm.append("file", file, "recording.webm");
+    groqForm.append("file", safeBlob, "recording.webm");
     groqForm.append("model", GROQ_MODEL);
     groqForm.append("language", "en");
     groqForm.append("prompt", "Transcribe a calendar event scheduling request with meeting names, times, dates, locations, and people's names.");

@@ -73,7 +73,7 @@ NEXTAUTH_URL="http://localhost:3000"
 GROQ_API_KEY="gsk_..."
 
 # Database (PostgreSQL / Neon)
-DATABASE_URL="postgres://user:password@endpoint.neon.tech/neondb?sslmode=require"
+DATABASE_URL="postgres://user:password@endpoint.neon.tech/neondb?sslmode=verify-full"
 ```
 
 ### 5. Database Setup
