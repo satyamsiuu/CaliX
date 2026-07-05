@@ -42,11 +42,11 @@ export default function PrivacyPolicyPage() {
             CaliX requires access to the <code>https://www.googleapis.com/auth/calendar</code> scope. We use this permission strictly to:
           </p>
           <ul className="list-disc pl-5 text-sm text-[var(--secondary-text)] space-y-1">
-            <li>Read your calendar events to display them in our interface.</li>
             <li>Create, update, or delete events based on your explicit AI or manual instructions.</li>
+            <li>Push the events you create directly to your Google Calendar.</li>
           </ul>
           <p className="text-sm leading-relaxed text-[var(--secondary-text)]">
-            <strong>We do not persistently store your calendar events in our database.</strong> Events are fetched dynamically directly from Google's servers.
+            <strong>Data Storage:</strong> We persistently store only the specific calendar events that you explicitly create through the CaliX interface in our secure database. This allows you to view your CaliX event history. We do <strong>not</strong> read, import, or store any of your existing personal Google Calendar events that were created outside of our application.
           </p>
 
           <h2 className="text-xl font-semibold">4. Third-Party AI Services</h2>
