@@ -404,7 +404,10 @@ export default function AICreatePage() {
       ? "audio/webm;codecs=opus"
       : "audio/webm";
 
-    const recorder = new MediaRecorder(stream, { mimeType });
+    const recorder = new MediaRecorder(stream, { 
+      mimeType,
+      audioBitsPerSecond: 16000 // 16kbps (highly compressed, perfect for voice/Whisper and prevents 413 Payload Too Large errors on Vercel)
+    });
     mediaRecorderRef.current = recorder;
     chunksRef.current = [];
 

@@ -41,19 +41,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange={false}
         >
-          <div className="fixed top-4 left-4 z-50">
-            <Link href="/">
-              <Image 
-                src="/calix-logo.png" 
-                alt="CaliX Logo" 
-                width={36} 
-                height={36} 
-                className="rounded-xl shadow-sm object-cover"
-                priority
-              />
-            </Link>
-          </div>
-          <div className="fixed top-4 right-4 z-50">
+          <div className="absolute top-4 right-4 z-50">
             <ThemeToggle />
           </div>
           <SessionProvider>{children}</SessionProvider>
