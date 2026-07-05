@@ -7,7 +7,7 @@ import { rateLimit } from "@/lib/rate-limit";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 // whisper-large-v3: 10.3% WER vs turbo's 12% — accuracy priority per user feedback
 const GROQ_MODEL = "whisper-large-v3";
-const GROQ_TIMEOUT_MS = 15_000;
+const GROQ_TIMEOUT_MS = 30_000;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // Lowered to 10MB for security hardening
 
 export async function POST(request: Request) {
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
   if (file.size > MAX_FILE_SIZE) {
     return NextResponse.json(
-      { error: "VALIDATION", message: "Audio file exceeds 25 MB limit" },
+      { error: "VALIDATION", message: "Audio file exceeds 10 MB limit" },
       { status: 400 }
     );
   }
@@ -70,11 +70,11 @@ export async function POST(request: Request) {
         body: groqForm,
         signal: controller.signal,
       });
-    } catch (err) {
+    } catch (err: any) {
       clearTimeout(timer);
-      if (err instanceof DOMException && err.name === "AbortError") {
+      if (err.name === "AbortError") {
         return NextResponse.json(
-          { error: "TIMEOUT", message: "Transcription timed out. Try again." },
+          { error: "TIMEOUT", message: "Transcription timed out (took >30s). Try again with a shorter recording." },
           { status: 504 }
         );
       }
@@ -106,10 +106,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ text });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[api/transcribe] Error:", err);
     return NextResponse.json(
-      { error: "TRANSCRIBE_FAILED", message: "Transcription failed. Try again." },
+      { error: "TRANSCRIBE_FAILED", message: `Transcription failed: ${err?.message || "Unknown Error"}` },
       { status: 500 }
     );
   }
