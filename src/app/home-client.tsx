@@ -72,16 +72,6 @@ export default function HomeClient({ session }: HomeClientProps) {
             </button>
           </div>
 
-          <p className="text-xs text-[var(--secondary-text)] max-w-xs mt-4">
-            This app is in testing mode.{" "}
-            <a
-              href="mailto:rawatsatyam058@gmail.com"
-              className="underline underline-offset-2 hover:text-[var(--primary-text)] transition-colors"
-            >
-              Email rawatsatyam058@gmail.com
-            </a>{" "}
-            to request access.
-          </p>
         </main>
       </div>
     );
