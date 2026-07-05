@@ -6,8 +6,8 @@ import { authOptions } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
-// whisper-large-v3: 10.3% WER vs turbo's 12% — accuracy priority per user feedback
-const GROQ_MODEL = "whisper-large-v3";
+// whisper-large-v3-turbo is significantly faster and prevents timeouts, with only a 1.7% drop in accuracy
+const GROQ_MODEL = "whisper-large-v3-turbo";
 const GROQ_TIMEOUT_MS = 30_000;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // Lowered to 10MB for security hardening
 
