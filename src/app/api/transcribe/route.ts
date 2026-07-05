@@ -2,14 +2,16 @@ export const maxDuration = 60; // Allow Vercel to run this function for up to 60
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-
 import { rateLimit } from "@/lib/rate-limit";
+import Groq from "groq-sdk";
 
-const GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 // whisper-large-v3-turbo is significantly faster and prevents timeouts, with only a 1.7% drop in accuracy
 const GROQ_MODEL = "whisper-large-v3-turbo";
-const GROQ_TIMEOUT_MS = 30_000;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // Lowered to 10MB for security hardening
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -50,60 +52,24 @@ export async function POST(request: Request) {
     );
   }
 
-  // CRITICAL FIX: Next.js incoming File objects cause Node's fetch to hang indefinitely 
-  // when passed directly to a new FormData. We MUST buffer it into memory first!
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  const safeBlob = new Blob([buffer], { type: file.type });
-
   try {
-    const groqForm = new FormData();
-    groqForm.append("file", safeBlob, "recording.webm");
-    groqForm.append("model", GROQ_MODEL);
-    groqForm.append("language", "en");
-    groqForm.append("prompt", "Transcribe a calendar event scheduling request with meeting names, times, dates, locations, and people's names.");
-    groqForm.append("response_format", "json");
+    // We MUST buffer the file into memory to pass to Groq SDK
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // Create a native Node.js File object that Groq SDK perfectly understands
+    const safeFile = new File([buffer], "recording.webm", { type: file.type });
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
+    // Use official SDK which correctly handles multipart form boundaries and timeouts
+    const transcription = await groq.audio.transcriptions.create({
+      file: safeFile,
+      model: GROQ_MODEL,
+      prompt: "Transcribe a calendar event scheduling request with meeting names, times, dates, locations, and people's names.",
+      response_format: "json",
+      language: "en",
+    });
 
-    let res: Response;
-    try {
-      res = await fetch(GROQ_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        },
-        body: groqForm,
-        signal: controller.signal,
-      });
-    } catch (err: any) {
-      clearTimeout(timer);
-      if (err.name === "AbortError") {
-        return NextResponse.json(
-          { error: "TIMEOUT", message: "Transcription timed out (took >30s). Try again with a shorter recording." },
-          { status: 504 }
-        );
-      }
-      throw err;
-    }
-
-    clearTimeout(timer);
-
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => "");
-      console.error("[api/transcribe] Groq error:", res.status, errBody);
-      return NextResponse.json(
-        {
-          error: "TRANSCRIBE_FAILED",
-          message: `Transcription service returned error ${res.status}. Try again.`,
-        },
-        { status: 502 }
-      );
-    }
-
-    const data = await res.json();
-    const text = (data.text || "").trim();
+    const text = (transcription.text || "").trim();
 
     if (!text) {
       return NextResponse.json(
