@@ -151,11 +151,13 @@ export async function PUT(
   }
 
   try {
+    const { encrypt } = require("@/lib/crypto");
+
     await db.event.update({
       where: { id },
       data: {
-        title: draft.title,
-        description: draft.description,
+        title: encrypt(draft.title) || "",
+        description: encrypt(draft.description) || null,
         startTime: result.data.start?.dateTime
           ? new Date(result.data.start.dateTime)
           : null,
@@ -163,8 +165,8 @@ export async function PUT(
           ? new Date(result.data.end.dateTime)
           : null,
         allDay: draft.allDay,
-        location: draft.location,
-        attendees: draft.guests.length > 0 ? JSON.stringify(draft.guests) : null,
+        location: encrypt(draft.location) || null,
+        attendees: draft.guests.length > 0 ? encrypt(JSON.stringify(draft.guests)) : null,
         reminders: draft.reminders.length > 0 ? JSON.stringify(draft.reminders) : null,
         colorId: draft.colorId,
         recurrence: draft.recurrence !== "NONE" ? draft.recurrence : null,

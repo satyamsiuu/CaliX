@@ -15,7 +15,17 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(events);
+  const { decrypt } = require("@/lib/crypto");
+  
+  const decryptedEvents = events.map(event => ({
+    ...event,
+    title: decrypt(event.title) || event.title,
+    description: decrypt(event.description),
+    location: decrypt(event.location),
+    attendees: decrypt(event.attendees)
+  }));
+
+  return NextResponse.json(decryptedEvents);
 }
 
 import { rateLimit } from "@/lib/rate-limit";

@@ -46,7 +46,7 @@ export default function PrivacyPolicyPage() {
             <li>Push the events you create directly to your Google Calendar.</li>
           </ul>
           <p className="text-sm leading-relaxed text-[var(--secondary-text)]">
-            <strong>Data Storage:</strong> We persistently store only the specific calendar events that you explicitly create through the CaliX interface in our secure database. This allows you to view your CaliX event history. We do <strong>not</strong> read, import, or store any of your existing personal Google Calendar events that were created outside of our application.
+            <strong>Data Storage:</strong> We persistently store only the specific calendar events that you explicitly create through the CaliX interface in our secure database. This allows you to view your CaliX event history. To guarantee your privacy, all sensitive event details (titles, descriptions, locations, and attendees) are heavily encrypted at rest using military-grade AES-256-GCM encryption before being saved to our database. We do <strong>not</strong> read, import, or store any of your existing personal Google Calendar events that were created outside of our application.
           </p>
 
           <h2 className="text-xl font-semibold">4. Third-Party AI Services</h2>

@@ -94,12 +94,15 @@ export async function createEvent(userId: string, draft: EventDraft) {
   }
 
   try {
+    // Import encryption utility
+    const { encrypt } = require("./crypto");
+
     await db.event.create({
       data: {
         googleEventId: result.data.id ?? null,
         userId,
-        title: draft.title,
-        description: draft.description,
+        title: encrypt(draft.title) || "",
+        description: encrypt(draft.description) || null,
         startTime: result.data.start?.dateTime
           ? new Date(result.data.start.dateTime)
           : null,
@@ -107,8 +110,8 @@ export async function createEvent(userId: string, draft: EventDraft) {
           ? new Date(result.data.end.dateTime)
           : null,
         allDay: draft.allDay,
-        location: draft.location,
-        attendees: draft.guests.length > 0 ? JSON.stringify(draft.guests) : null,
+        location: encrypt(draft.location) || null,
+        attendees: draft.guests.length > 0 ? encrypt(JSON.stringify(draft.guests)) : null,
         reminders:
           draft.reminders.length > 0 ? JSON.stringify(draft.reminders) : null,
         colorId: draft.colorId,
