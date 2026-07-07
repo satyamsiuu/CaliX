@@ -14,7 +14,7 @@ const MAX_TEXT_LENGTH = 3000;
 
 const COMMON_RULES = `
 Rules:
-- date_description must be the EXACT raw phrase from the input — do not reformat or resolve it
+- date_description MUST be the absolute date and time resolved from the user's input. You must convert relative phrases (like 'tomorrow', 'day after tomorrow', 'next Tuesday') into an exact absolute date (e.g., 'July 15, 2026 at 3:00 PM') using the current date provided above. If no specific time is mentioned, default to 9:00 AM (unless it's an all-day event).
 - is_all_day should be true when the event has no specific time (e.g. 'all day', 'the whole day', a bare date like 'July 10th' with no clock time)
 - duration_minutes defaults to 60 if not specified (ignored for all-day events)
 - reminders should be reasonable (default to empty array if not mentioned)
@@ -23,37 +23,58 @@ Rules:
 - recurrence_description should capture repetition phrases like 'repeat annually', 'every week', 'daily', 'monthly' — or null if no repetition mentioned
 - title should be concise and descriptive`;
 
-const SINGLE_SYSTEM_PROMPT = `You are a calendar event parser. Extract event details from natural language and return ONLY valid JSON with no markdown, no code fences, no prose.
+function getSingleSystemPrompt(timeZone: string) {
+  const now = new Date();
+  const currentDate = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone });
+  const currentTime = now.toLocaleTimeString("en-US", { timeZone });
+
+  return `You are an expert calendar event parser. Extract event details from natural language and return ONLY valid JSON with no markdown, no prose.
+
+CRITICAL CONTEXT:
+- Today's Date is: ${currentDate}
+- The Current Time is: ${currentTime}
+- User Timezone is: ${timeZone}
 
 Return this exact JSON structure:
 {
   "title": "string (required, concise event title)",
-  "date_description": "string (the raw date/time phrase from the user input, e.g. 'next Tuesday at 3pm' or 'July 10th' — do NOT resolve dates yourself)",
+  "date_description": "string (The EXACT resolved absolute date and time. Convert 'day after tomorrow' to the actual calendar date using Today's Date context. e.g. 'July 12, 2026 at 5:00 PM')",
   "duration_minutes": "number (default 60 if unspecified)",
-  "is_all_day": "boolean (true if the event spans the entire day, e.g. 'all day', 'the whole day', a bare date with no time — default false)",
-  "recurrence_description": "string or null (natural language repetition phrase like 'daily', 'every week', 'repeat annually' — or null if none)",
+  "is_all_day": "boolean (true if the event spans the entire day, default false)",
+  "recurrence_description": "string or null",
   "location": "string or null",
   "reminders": [{ "amount": "number", "unit": "minutes|hours|days" }],
-  "color_description": "string or null (natural color name like 'blue' or 'lavender')",
+  "color_description": "string or null",
   "guests": ["email strings, or empty array"],
   "notes": "string or null"
 }
 ${COMMON_RULES}`;
+}
 
-const MULTI_SYSTEM_PROMPT = `You are a calendar event parser. Extract ALL distinct events from natural language and return ONLY valid JSON with no markdown, no code fences, no prose.
+function getMultiSystemPrompt(timeZone: string) {
+  const now = new Date();
+  const currentDate = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone });
+  const currentTime = now.toLocaleTimeString("en-US", { timeZone });
+
+  return `You are an expert calendar event parser. Extract ALL distinct events from natural language and return ONLY valid JSON with no markdown, no prose.
+
+CRITICAL CONTEXT:
+- Today's Date is: ${currentDate}
+- The Current Time is: ${currentTime}
+- User Timezone is: ${timeZone}
 
 Return this exact JSON structure:
 {
   "events": [
     {
       "title": "string (required, concise event title)",
-      "date_description": "string (the raw date/time phrase from the user input, e.g. 'next Tuesday at 3pm' or 'July 10th' — do NOT resolve dates yourself)",
+      "date_description": "string (The EXACT resolved absolute date and time. Convert 'day after tomorrow' to the actual calendar date using Today's Date context. e.g. 'July 12, 2026 at 5:00 PM')",
       "duration_minutes": "number (default 60 if unspecified)",
-      "is_all_day": "boolean (true if the event spans the entire day, e.g. 'all day', 'the whole day', a bare date with no time — default false)",
-      "recurrence_description": "string or null (natural language repetition phrase like 'daily', 'every week', 'repeat annually' — or null if none)",
+      "is_all_day": "boolean (true if the event spans the entire day, default false)",
+      "recurrence_description": "string or null",
       "location": "string or null",
       "reminders": [{ "amount": "number", "unit": "minutes|hours|days" }],
-      "color_description": "string or null (natural color name like 'blue' or 'lavender')",
+      "color_description": "string or null",
       "guests": ["email strings, or empty array"],
       "notes": "string or null"
     }
@@ -62,6 +83,7 @@ Return this exact JSON structure:
 
 ${COMMON_RULES}
 - You MUST extract every distinct event mentioned in the user's prompt into the events array.`;
+}
 
 interface GroqRequest {
   text: string;
@@ -124,7 +146,7 @@ export async function POST(request: Request) {
   const mode = body.mode === "multiple" ? "multiple" : "single";
 
   try {
-    const groqResults = await callGroq(body.text, mode);
+    const groqResults = await callGroq(body.text, mode, timeZone);
     const resolved = await Promise.all(
       groqResults.map((groq) => resolveEvent(groq, timeZone, session.user.id))
     );
@@ -160,7 +182,7 @@ function processGroqEvent(parsed: Partial<GroqResponse>): GroqResponse {
   };
 }
 
-async function callGroq(text: string, mode: "single" | "multiple"): Promise<GroqResponse[]> {
+async function callGroq(text: string, mode: "single" | "multiple", timeZone: string): Promise<GroqResponse[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
 
@@ -175,7 +197,7 @@ async function callGroq(text: string, mode: "single" | "multiple"): Promise<Groq
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [
-          { role: "system", content: mode === "multiple" ? MULTI_SYSTEM_PROMPT : SINGLE_SYSTEM_PROMPT },
+          { role: "system", content: mode === "multiple" ? getMultiSystemPrompt(timeZone) : getSingleSystemPrompt(timeZone) },
           { role: "user", content: text },
         ],
         response_format: { type: "json_object" },

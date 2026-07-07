@@ -292,6 +292,14 @@ export default function AICreatePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (recording) {
+      setError("Please stop the recording before parsing.");
+      return;
+    }
+    if (transcribing) {
+      setError("Please wait for the transcription to finish.");
+      return;
+    }
     if (!text.trim()) return;
 
     setLoading(true);
@@ -597,8 +605,8 @@ export default function AICreatePage() {
               <div className="pt-4 border-t border-[var(--border-color)]">
                 <button
                   type="submit"
-                  disabled={loading || !text.trim()}
-                  className="btn-gradient w-full text-base shadow-md"
+                  disabled={loading || !text.trim() || recording || transcribing}
+                  className="btn-gradient w-full text-base shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
