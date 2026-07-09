@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Mic, Square, Sparkles, Check, X, Calendar as CalendarIcon, Clock, Edit, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Mic, Square, Sparkles, Check, X, Calendar as CalendarIcon, Clock, Edit, Plus, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { EventDraft } from "@/lib/create-event";
 import { saveDraft, saveDraftMeta, loadDraftMeta } from "@/lib/event-draft-storage";
@@ -583,6 +583,21 @@ export default function AICreatePage() {
                       {transcribing ? "Transcribing..." : recording ? "Recording..." : "Voice input"}
                     </span>
                   </button>
+
+                  {text && (
+                    <button
+                      type="button"
+                      onClick={() => setText("")}
+                      disabled={loading || recording || transcribing}
+                      className="btn-secondary text-[var(--secondary-text)] hover:text-red-500 hover:border-red-500/30"
+                      title="Clear text"
+                    >
+                      <Trash2 size={18} />
+                      <span className="hidden sm:inline-block ml-2 text-sm font-medium">
+                        Clear
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="text-xs text-[var(--secondary-text)] hidden sm:block">
